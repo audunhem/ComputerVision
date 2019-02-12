@@ -341,18 +341,31 @@ X_train, Y_train, X_val, Y_val = train_val_split(X_train, Y_train, 0.1)
 ###############################################################################
 #FEATURES
 
-activation_function = 'ReLU' #can use: sigmoid, improved_sigmoid, ELU, ReLU, LeakyReLU
+activation_function = 'ELU' #can use: sigmoid, improved_sigmoid, ELU, ReLU, LeakyReLU
 shuffle_training_examples = True
 normal_distributed_weights = True
 nesterov_momentum = True
 
 #network topology
-hidden_layer_units = [64, 64]
+hidden_layer_units = [128, 64]
 
 #bonus
 dropout_active = True
 pixel_shifting = False
 
+print("",
+    "USED FEATURES",
+      "------------",
+      "Activation function: {}".format(activation_function),
+      "Training example shuffling: {}".format(shuffle_training_examples),
+      "Normal distributed weights: {}".format(normal_distributed_weights),
+      "Nesterov momentum: {}".format(nesterov_momentum),
+      "Dropout method: {}".format(dropout_active),
+      "Pixel shift: {}".format(pixel_shifting),
+      "------------",
+      "Hidden layer units: {}".format(hidden_layer_units),
+      "",
+      sep='\n')
 
 ###############################################################################
 #VARIABLE DECLARATIONS
@@ -364,7 +377,7 @@ learning_rate = 0.5
 num_batches = X_train.shape[0] // batch_size
 should_check_gradient = False
 check_step = num_batches // 10
-max_epochs = 5
+max_epochs = 20
 v_1 = 0
 v_2 = 0
 v_output = 0
@@ -421,7 +434,7 @@ def train_loop(X_train, Y_train, should_check_gradient):
                 X_batch = bit_shift_direction(X_batch,True,0)
 
             #Backpropagation
-            [weights, momentum] = backpropagate(X_batch, Y_batch, weights, momentum, learning_rate, should_check_gradient)
+            [weights, momentum] = backpropagate(X_batch, Y_batch, weights, momentum, learning_rate_annealing, should_check_gradient)
 
             activate_bias = False
             should_check_gradient = False #checking gradient only for the first batch in the first epoch
