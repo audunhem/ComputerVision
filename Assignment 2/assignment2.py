@@ -94,7 +94,7 @@ def sigmoid(a):
 def improved_sigmoid(a):
     return 1.7159*np.tanh(2*a/3)
 
-def ReLU(X,w):
+def ReLU(a):
     return np.where(a > 0, a,0)
 
 def dReLU(X,w):
@@ -102,7 +102,7 @@ def dReLU(X,w):
     dx[np.dot(X,w.T) < 0] = 0
     return dx
 
-def LeakyReLU(X,w):
+def LeakyReLU(a):
     return np.where(a > 0, a, 0.01*a)
 
 def dLeakyReLU(X,w, alpha =0.01):
@@ -116,7 +116,8 @@ def ELU(a, alpha = 0.005):
 
 def dELU(X,w, alpha =0.005):
     dx = np.ones_like(np.dot(X,w.T))
-    dx[np.dot(X,w.T) < 0] = alpha*np.exp(np.dot(X,w.T))
+    under_zero = np.dot(X,w.T) < 0
+    dx = np.add(under_zero.astype(int)*alpha*np.exp(np.dot(X,w.T)),dx)
     return dx
 
 def calculate_derivative(A, weights, index):
@@ -125,9 +126,9 @@ def calculate_derivative(A, weights, index):
     elif (activation_function is 'sigmoid'):
         return (A[-index]*(1-A[-index])).T
     elif (activation_function is 'ReLU'):
-        return dReLu(A[-(index+1)],weights[-(index+1)])
+        return dReLU(A[-(index+1)],weights[-(index+1)])
     elif (activation_function is 'leakyReLU'):
-        return dLeakyReLu(A[-(index+1)],weights[-(index+1)])
+        return dLeakyReLU(A[-(index+1)],weights[-(index+1)])
     return dELU(A[-(index+1)],weights[-(index+1)])
 
 def forward_hidden(X, w):
@@ -137,9 +138,9 @@ def forward_hidden(X, w):
     elif (activation_function is 'sigmoid'):
         return sigmoid(a)
     elif (activation_function is 'ReLU'):
-        return ReLu(a)
+        return ReLU(a)
     elif (activation_function is 'leakyReLU'):
-        return LeakyReLu(a)
+        return LeakyReLU(a)
     return ELU(a)
 
 def forward_output(X, w):
@@ -196,7 +197,7 @@ def gradient_descent_hidden_layer(index, A, outputs, targets, weights, momentum,
     weights_momentum = np.add(weights, momentum)
     delta = -(targets - outputs).T
     for i in range(1,len(weights)-index):
-        derivative = calculate_derivative(A, weights_momentum, i)*dropouts[-i].T
+        derivative = (calculate_derivative(A, weights_momentum, i)*dropouts[-i]).T
         delta = derivative*np.dot(weights_momentum[-i].T,delta)
     dw = delta.dot(A[index])
     dw = dw / normalization_factor # Normalize gradient equally as loss normalization
@@ -340,7 +341,7 @@ X_train, Y_train, X_val, Y_val = train_val_split(X_train, Y_train, 0.1)
 ###############################################################################
 #FEATURES
 
-activation_function = 'sigmoid' #can use: sigmoid, improved_sigmoid, ELU, ReLU, LeakyReLU
+activation_function = 'ReLU' #can use: sigmoid, improved_sigmoid, ELU, ReLU, LeakyReLU
 shuffle_training_examples = True
 normal_distributed_weights = True
 nesterov_momentum = True
@@ -350,7 +351,7 @@ hidden_layer_units = [64, 64]
 
 #bonus
 dropout_active = True
-pixel_shifting = True
+pixel_shifting = False
 
 
 ###############################################################################
