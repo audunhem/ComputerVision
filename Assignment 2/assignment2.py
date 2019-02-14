@@ -8,7 +8,7 @@ import tqdm
 ###############################################################################
 #FUNCTION DECLARATIONS
 
-def should_early_stop(validation_loss, num_steps=4):
+def should_early_stop(validation_loss, num_steps=5):
     if len(validation_loss) < num_steps+1:
         return False
 
@@ -84,6 +84,8 @@ def check_gradient_output(X, targets, w_kj, epsilon, computed_gradient):
     maximum_aboslute_difference = abs(computed_gradient-dw).max()
     assert maximum_aboslute_difference <= epsilon**2, "Absolute error was: {}".format(maximum_aboslute_difference)
 
+#Definition of mathematical functions:
+
 def softmax(a):
     a_exp = np.exp(a)
     return a_exp / a_exp.sum(axis=1, keepdims=True)
@@ -122,9 +124,9 @@ def dELU(X,w, alpha =0.005):
 
 def calculate_derivative(A, weights, index):
     if (activation_function is 'improved_sigmoid'):
-        return 1.7159*2/3*(1 - np.tanh(2*np.dot(A[-(index+1)],weights[-(index+1)].T)/3)**2).T
+        return 1.7159*2/3*(1 - np.tanh(2*np.dot(A[-(index+1)],weights[-(index+1)].T)/3)**2)
     elif (activation_function is 'sigmoid'):
-        return (A[-index]*(1-A[-index])).T
+        return (A[-index]*(1-A[-index]))
     elif (activation_function is 'ReLU'):
         return dReLU(A[-(index+1)],weights[-(index+1)])
     elif (activation_function is 'leakyReLU'):
@@ -191,6 +193,10 @@ def gradient_descent_output_layer(A, outputs, targets, weights, momentum, dropou
 
 
 def gradient_descent_hidden_layer(index, A, outputs, targets, weights, momentum, dropouts, learning_rate, should_check_gradient):
+    """
+        Preforms gradient descent for the weights between the hidden layers or
+        between the input layer and the hidden layer.
+    """
     normalization_factor = A[-1].shape[0] * targets.shape[1] # batch_size * num_classes
     w_down = weights[index]
     w_up = weights[index+1]
@@ -214,6 +220,9 @@ def gradient_descent_hidden_layer(index, A, outputs, targets, weights, momentum,
     return w_down
 
 def backpropagate(X, targets, weights, momentum, learning_rate, should_check_gradient):
+    """
+        Procedure for backpropagation. Can be used both with and without Nesterov momentum.
+    """
     new_weights = []
     new_momentum = []
     dropouts = []
@@ -226,7 +235,6 @@ def backpropagate(X, targets, weights, momentum, learning_rate, should_check_gra
         A[i] = A[i]*dropouts[i]
 
     if nesterov_momentum:
-
         [new_weight, v_new] = gradient_descent_output_layer(A, outputs, targets, weights, momentum, dropouts, learning_rate, should_check_gradient)
         new_momentum.insert(0,v_new)
         new_weights.insert(0,new_weight)
@@ -261,6 +269,8 @@ def shuffle_train_set(X_train, Y_train):
     X_train_new = X_train[Train_indexes]
     Y_train_new = Y_train[Train_indexes]
     return X_train_new, Y_train_new
+
+#Functions for task 5
 
 def bit_shift_image_UP(X_for_augment):
     for img_num in range(X_for_augment.shape[0]):
@@ -341,31 +351,19 @@ X_train, Y_train, X_val, Y_val = train_val_split(X_train, Y_train, 0.1)
 ###############################################################################
 #FEATURES
 
-activation_function = 'ELU' #can use: sigmoid, improved_sigmoid, ELU, ReLU, LeakyReLU
+activation_function = 'ReLU' #can use: sigmoid, improved_sigmoid, ELU, ReLU, LeakyReLU
 shuffle_training_examples = True
 normal_distributed_weights = True
 nesterov_momentum = True
+should_check_gradient = False
 
 #network topology
-hidden_layer_units = [128, 64]
+hidden_layer_units = [64] #for more layers add an element, i.e. [64, 32]
 
 #bonus
 dropout_active = True
-pixel_shifting = False
+pixel_shifting = True
 
-print("",
-    "USED FEATURES",
-      "------------",
-      "Activation function: {}".format(activation_function),
-      "Training example shuffling: {}".format(shuffle_training_examples),
-      "Normal distributed weights: {}".format(normal_distributed_weights),
-      "Nesterov momentum: {}".format(nesterov_momentum),
-      "Dropout method: {}".format(dropout_active),
-      "Pixel shift: {}".format(pixel_shifting),
-      "------------",
-      "Hidden layer units: {}".format(hidden_layer_units),
-      "",
-      sep='\n')
 
 ###############################################################################
 #VARIABLE DECLARATIONS
@@ -373,28 +371,26 @@ print("",
 # Hyperparameters
 
 batch_size = 128
-learning_rate = 0.5
+learning_rate = 0.05
 num_batches = X_train.shape[0] // batch_size
-should_check_gradient = False
 check_step = num_batches // 10
-max_epochs = 20
-v_1 = 0
-v_2 = 0
-v_output = 0
+max_epochs = 25
 mu = 0
 
 WIDTH = 28
 HEIGHT = 28
-num_bits_shifted = 0
-dropout_probability = 0
+num_bits_shifted = 1
 
 if dropout_active:
     dropout_probability = 0.2
+else:
+    dropout_probability = 0
 
 if nesterov_momentum:
-    mu = 0.5
+    mu = 0.9
+else:
+    mu = 0
 
-activate_bias = True
 
 # Tracking variables
 TRAIN_LOSS = []
@@ -403,7 +399,7 @@ VAL_LOSS = []
 TRAIN_ACC = []
 TEST_ACC = []
 VAL_ACC = []
-PREVIOUS_WEIGHTS = [0,0,0,0]
+PREVIOUS_WEIGHTS = [0,0,0,0,0,0]
 
 
 ###############################################################################
@@ -424,20 +420,19 @@ def train_loop(X_train, Y_train, should_check_gradient):
         if (shuffle_training_examples):
             X_train, Y_train = shuffle_train_set(X_train, Y_train)
 
-        learning_rate_annealing = learning_rate/(1+e/max_epochs) #use if needed
+        learning_rate_annealing = learning_rate/(1+5*e/max_epochs) #use if needed
 
         for i in tqdm.trange(num_batches):
             X_batch = X_train[i*batch_size:(i+1)*batch_size]
             Y_batch = Y_train[i*batch_size:(i+1)*batch_size]
 
-            if pixel_shifting:
+            if pixel_shifting and i % 8 == 0:
                 X_batch = bit_shift_direction(X_batch,True,0)
 
             #Backpropagation
             [weights, momentum] = backpropagate(X_batch, Y_batch, weights, momentum, learning_rate_annealing, should_check_gradient)
 
-            activate_bias = False
-            should_check_gradient = False #checking gradient only for the first batch in the first epoch
+            should_check_gradient = False #never checking gradient for more than the first batch in the first epoch
             if i % check_step == 0:
                 # Loss
                 [_,train_output] = feedforward(X_train, weights)
@@ -462,14 +457,35 @@ def train_loop(X_train, Y_train, should_check_gradient):
                     return ideal_weights
     return weights
 
+
+print("",
+    "USED FEATURES",
+      "------------",
+      "Activation function: {}".format(activation_function),
+      "Training example shuffling: {}".format(shuffle_training_examples),
+      "Normal distributed weights: {}".format(normal_distributed_weights),
+      "Nesterov momentum: {}".format(nesterov_momentum),
+      "Dropout method: {}".format(dropout_active),
+      "Pixel shift: {}".format(pixel_shifting),
+      "------------",
+      "Hidden layer units: {}".format(hidden_layer_units),
+      "Learning rate: {}".format(learning_rate),
+      "",
+      sep='\n')
+
 final_weights = train_loop(X_train, Y_train, should_check_gradient)
 
 
 ###############################################################################
 #PLOTTING
 
-print(VAL_LOSS[-4:])
-print(VAL_ACC[-10:])
+print("",
+"Training accuracy: {}".format(TRAIN_ACC[-1]),
+"Validation accuracy: {}".format(VAL_ACC[-1]),
+"Testing accuracy: {}".format(TEST_ACC[-1]),
+sep='\n')
+
+
 plt.plot(TRAIN_LOSS, label="Training loss")
 plt.plot(TEST_LOSS, label="Testing loss")
 plt.plot(VAL_LOSS, label="Validation loss")
@@ -481,6 +497,6 @@ plt.clf()
 plt.plot(TRAIN_ACC, label="Training accuracy")
 plt.plot(TEST_ACC, label="Testing accuracy")
 plt.plot(VAL_ACC, label="Validation accuracy")
-plt.ylim([0, 1.0])
+plt.ylim([0, 1])
 plt.legend()
 plt.show()
