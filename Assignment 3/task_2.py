@@ -120,7 +120,7 @@ class network1(nn.Module):
         x = self.dropout(x)
         # Reshape our input to (batch_size, num_output_features)
         x = x.view(-1, self.num_output_features)
-        # Forward pass through the fully-connected layers.
+import torch        # Forward pass through the fully-connected layers.
         x = self.classifier(x)
         return x
 

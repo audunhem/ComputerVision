@@ -299,7 +299,7 @@ class Trainer:
                 # Reset all computed gradients to 0
                 self.optimizer.zero_grad()
                  # Compute loss/accuracy for all three datasets.
-                if batch_it % self.validation_check == 0:
+                if batch_it % self.validation_check == 0 and epoch != 0:
                     self.validation_epoch()
                     # Check early stopping criteria.
                     if self.should_early_stop():

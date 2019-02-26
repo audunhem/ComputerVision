@@ -160,7 +160,7 @@ class Trainer:
 
 
 if __name__ == "__main__":
-    
+
     trainer = Trainer()
     trainer.train()
     os.makedirs("plots", exist_ok=True)
