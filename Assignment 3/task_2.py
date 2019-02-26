@@ -156,7 +156,7 @@ class Trainer:
         # Load our dataset
         self.dataloader_train, self.dataloader_val, self.dataloader_test = load_cifar10(self.batch_size)
 
-        self.validation_check = len(self.dataloader_train) // 2
+        self.validation_check = len(self.dataloader_train) // 1
 
         # Tracking variables
         self.VALIDATION_LOSS = []
@@ -257,6 +257,7 @@ class Trainer:
 if __name__ == "__main__":
     trainer = Trainer()
     trainer.train()
+    trainer.early_stop_count = 1 #for when the model does not early stop -> look at last value
 
     os.makedirs("plots", exist_ok=True)
     # Save plots and show them
@@ -265,7 +266,6 @@ if __name__ == "__main__":
     plt.plot(trainer.VALIDATION_LOSS, label="Validation loss")
     plt.plot(trainer.TRAIN_LOSS, label="Training loss")
     plt.plot(trainer.TEST_LOSS, label="Testing Loss")
-    plt.xlim(0,20)
     plt.legend()
     plt.savefig(os.path.join("plots", "final_loss.png"))
     plt.show()
@@ -275,10 +275,12 @@ if __name__ == "__main__":
     plt.plot(trainer.VALIDATION_ACC, label="Validation Accuracy")
     plt.plot(trainer.TRAIN_ACC, label="Training Accuracy")
     plt.plot(trainer.TEST_ACC, label="Testing Accuracy")
-    plt.xticks(np.arange(0, 10, 1.0))
     plt.legend()
     plt.savefig(os.path.join("plots", "final_accuracy.png"))
     plt.show()
 
+    print("Final train loss:", trainer.TRAIN_LOSS[-trainer.early_stop_count])
+    print("Final training accuracy:", trainer.TRAIN_ACC[-trainer.early_stop_count])
+    print("Final validation loss:", trainer.VALIDATION_LOSS[-trainer.early_stop_count])
     print("Final test accuracy:", trainer.TEST_ACC[-trainer.early_stop_count])
     print("Final validation accuracy:", trainer.VALIDATION_ACC[-trainer.early_stop_count])

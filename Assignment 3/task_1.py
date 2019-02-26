@@ -1,7 +1,6 @@
 import os
 import matplotlib.pyplot as plt
 import torch
-import tqdm
 from torch import nn
 from dataloaders import load_cifar10
 from utils import to_cuda, compute_loss_and_accuracy
@@ -29,11 +28,10 @@ class network1(nn.Module):
             nn.Conv2d(
                 in_channels=image_channels,
                 out_channels=num_filters_1,
-                kernel_size=3,
+                kernel_size=5,
                 stride=1,
-                padding=1
+                padding=2
             ),
-            nn.BatchNorm2d(num_filters_1),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
             nn.Conv2d(
@@ -41,19 +39,17 @@ class network1(nn.Module):
                 out_channels=num_filters_2,
                 kernel_size=3,
                 stride=1,
-                padding=1
+                padding=2
             ),
-            nn.BatchNorm2d(num_filters_2),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU(),
             nn.Conv2d(
                 in_channels=num_filters_2,
                 out_channels=num_filters_3,
-                kernel_size=3,
+                kernel_size=5,
                 stride=1,
-                padding=1
+                padding=2
             ),
-            nn.BatchNorm2d(num_filters_3),
             nn.MaxPool2d(kernel_size=2, stride=2),
             nn.ReLU()
         )
@@ -66,7 +62,6 @@ class network1(nn.Module):
         # included with nn.CrossEntropyLoss
         self.classifier = nn.Sequential(
             nn.Linear(self.num_output_features, 64),
-            nn.BatchNorm1d(64),
             nn.ReLU(),
             nn.Linear(64, 10)
         )
@@ -97,7 +92,7 @@ class Trainer:
         # Define hyperparameters
         self.epochs = 100
         self.batch_size = 64
-        self.learning_rate = 15e-3
+        self.learning_rate = 30e-3
         self.early_stop_count = 4
 
         # Architecture
@@ -108,8 +103,6 @@ class Trainer:
         self.model = network1(image_channels=3, num_classes=10)
         # Transfer model to GPU VRAM, if possible.
         self.model = to_cuda(self.model)
-        #dropout function
-        self.dropout = nn.Dropout(p=0.2)
 
 
         # Define our optimizer. SGD = Stochastich Gradient Descent
@@ -192,7 +185,7 @@ class Trainer:
                 Y_batch = to_cuda(Y_batch)
 
                 # Perform the forward pass
-                predictions = self.model(self.dropout(X_batch))
+                predictions = self.model(X_batch)
                 # Compute the cross entropy loss for the batch
                 loss = self.loss_criterion(predictions, Y_batch)
 
@@ -205,7 +198,7 @@ class Trainer:
                 # Reset all computed gradients to 0
                 self.optimizer.zero_grad()
                  # Compute loss/accuracy for all three datasets.
-                if batch_it % self.validation_check == 0:
+                if batch_it % self.validation_check == 0 and epoch != 0:
                     self.validation_epoch()
                     # Check early stopping criteria.
                     if self.should_early_stop():
@@ -237,5 +230,8 @@ if __name__ == "__main__":
     plt.savefig(os.path.join("plots", "final_accuracy.png"))
     plt.show()
 
+    print("Final train loss:", trainer.TRAIN_LOSS[-trainer.early_stop_count])
+    print("Final training accuracy:", trainer.TRAIN_ACC[-trainer.early_stop_count])
+    print("Final validation loss:", trainer.VALIDATION_LOSS[-trainer.early_stop_count])
     print("Final test accuracy:", trainer.TEST_ACC[-trainer.early_stop_count])
     print("Final validation accuracy:", trainer.VALIDATION_ACC[-trainer.early_stop_count])
