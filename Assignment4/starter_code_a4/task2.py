@@ -116,6 +116,8 @@ def get_all_box_matches(prediction_boxes, gt_boxes, iou_threshold):
             if matches[i][1] != prediction_match_index and matches[i][2] != gt_match_index:
                 updated_matches.append(matches[i])
         matches = updated_matches
+    prediction_matches = np.asarray(prediction_matches)
+    gt_matches = np.asarray(gt_matches)
 
     return (prediction_matches, gt_matches)
 
@@ -140,11 +142,13 @@ def calculate_individual_image_result(
     """
     (prediction_matches, gt_matches) = get_all_box_matches(
             prediction_boxes, gt_boxes, iou_threshold)
-    true_positives = len(prediction_matches)
-    false_negatives = len(gt_boxes)-len(prediction_matches)
-    false_positives = len(prediction_boxes)-len(gt_matches)
+    if len(prediction_matches)-len(gt_matches) != 0:
+        print(len(prediction_matches),len(gt_matches))
+    true_positives = len(gt_matches)
+    false_negatives = len(gt_boxes)-len(gt_matches)
+    false_positives = len(prediction_boxes)-len(prediction_matches)
 
-    return {"true_pos": true_positives, "false_pos": false_negatives, "false_neg": false_positives}
+    return {"true_pos": true_positives, "false_pos": false_positives, "false_neg": false_negatives}
 
 
 def calculate_precision_recall_all_images(
@@ -176,9 +180,14 @@ def calculate_precision_recall_all_images(
         false_positives += values["false_pos"]
         false_negatives += values["false_neg"]
         true_positives += values["true_pos"]
-
+    #print("FP: ", false_positives)
+    #print("FN: ", false_negatives)
+    #print("TP: ", true_positives)
     precision = calculate_precision(true_positives, false_positives, false_negatives)
     recall = calculate_recall(true_positives, false_positives, false_negatives)
+
+    #print("Precision: ", precision)
+    #print("Recall: ", recall)
     return (precision, recall)
 
 
@@ -217,12 +226,15 @@ def get_precision_recall_curve(all_prediction_boxes, all_gt_boxes,
     for i in range(len(confidence_thresholds)):
         confident_predictions = []
         for j in range(len(all_prediction_boxes)):
-            filter_mask = np.greater(confidence_scores[j], confidence_thresholds[i])
+            filter_mask = np.greater_equal(confidence_scores[j], confidence_thresholds[i])
             confident_predictions.append(all_prediction_boxes[j][filter_mask])
         (this_precision, this_recall) = calculate_precision_recall_all_images(
-                confident_predictions, all_gt_boxes, confidence_thresholds[i])
+                confident_predictions, all_gt_boxes, iou_threshold)
+        #print(len(confident_predictions[0]))
         precisions.append(this_precision)
         recalls.append(this_recall)
+    precisions = np.asarray(precisions)
+    recalls = np.asarray(recalls)
     return (precisions, recalls)
 
 
@@ -239,12 +251,13 @@ def plot_precision_recall_curve(precisions, recalls):
     """
     # No need to edit this code.
     plt.figure(figsize=(20, 20))
-    plt.plot(precisions,recalls)
+    plt.plot(recalls,precisions)
     plt.xlabel("Recall")
     plt.ylabel("Precision")
     plt.xlim([0.8, 1.0])
     plt.ylim([0.8, 1.0])
     plt.savefig("precision_recall_curve.png")
+
 
 
 def calculate_mean_average_precision(precisions, recalls):
@@ -261,17 +274,22 @@ def calculate_mean_average_precision(precisions, recalls):
     # DO NOT CHANGE. If you change this, the tests will not pass when we run the final
     # evaluation
     recall_levels = np.linspace(0, 1.0, 11)
-    print(precisions)
+
+    recalls, precisions = zip(*sorted(zip(recalls, precisions)))
     #calculate average precision for each class
     sum = 0
     for i in range(len(recall_levels)):
-        min_recall_index = -1;
+        min_precision_index = -1
         for j in range(len(recalls)):
             if recalls[j] >= recall_levels[i]:
-                min_recall_index = j
+                min_precision_index = j
                 break
-        sum += max(precisions[j:])
-    print(sum)
+        if min_precision_index == -1:
+            sum += 0
+            print("Precision for recall >= ",recall_levels[i], " : ", 0)
+        else:
+            sum += max(precisions[min_precision_index:])
+            print("Precision for recall >= ",recall_levels[i], " : ", max(precisions[min_precision_index:]))
 
     return sum/len(recall_levels)
 
@@ -314,7 +332,6 @@ def mean_average_precision(ground_truth_boxes, prediction_boxes):
                                                      confidence_scores,
                                                      iou_threshold)
     plot_precision_recall_curve(precisions, recalls)
-    print("Here")
     mean_average_precision = calculate_mean_average_precision(precisions,
                                                               recalls)
     print("Mean average precision: {:.4f}".format(mean_average_precision))
