@@ -2,32 +2,27 @@ import os
 import matplotlib.pyplot as plt
 import torchvision
 import torch
-#import tqdm
 from torch import nn
 from dataloaders import load_cifar10
 from utils import to_cuda, compute_loss_and_accuracy
-
 
 
 class Model(nn.Module):
     def __init__(self):
         super().__init__()
         self.model = torchvision.models.resnet18 ( pretrained = True )
-        self.model.fc = nn.Linear( 512 *4 , 10 ) # No need to apply softmax ,
-        # as this is done in nn. C r o s s E n t r o p y L o s s
-        for param in self.model.parameters(): # Freeze all parameters
+        self.model.fc = nn.Linear( 512 *4 , 10 )     # No need to apply softmax
+                                                     # as this is done in nn.CrossEntropyLoss.
+        for param in self.model.parameters():        # Freeze all parameters
             param.requires_grad = False
-        for param in self.model.fc.parameters():    # Unfreeze the last fully-connected
-            param.requires_grad = True              # layer
+        for param in self.model.fc.parameters():     # Unfreeze the last fully-connected
+            param.requires_grad = True               # layer.
         for param in self.model.layer4.parameters(): # Unfreeze the last 5 convolutional
-            param.requires_grad = True
-                               # layers
+            param.requires_grad = True               # layers.
     def forward ( self , x):
         x = nn.functional.interpolate(x , scale_factor=8)
         x = self.model(x)
         return x
-
-
 
 
 class Trainer:
@@ -47,20 +42,19 @@ class Trainer:
 
         # Since we are doing multi-class classification, we use the CrossEntropyLoss
         self.loss_criterion = nn.CrossEntropyLoss()
-        # Initialize the mode
+        # Initialize the model
         self.model = Model()
         # Transfer model to GPU VRAM, if possible.
         self.model = to_cuda(self.model)
 
 
-
-        # Define our optimizer. SGD = Stochastich Gradient Descent
+        # Define our optimizer.
         self.optimizer = torch.optim.Adam(self.model.parameters(),self.learning_rate, (0.99,0.999), eps=1e-1,weight_decay=1e-4)
-        #self.optimizer = torch.optim.ASGD(self.model.parameters(), self.learning_rate)
-        #self.scheduler = torch.optim.lr_scheduler.StepLR(self.optimizer, 2, gamma=0.1, last_epoch=-1)
+
         # Load our dataset
         self.dataloader_train, self.dataloader_val, self.dataloader_test = load_cifar10(self.batch_size)
 
+        # Number of times per epoch to run validation check
         self.validation_check = len(self.dataloader_train) // 2
 
         # Tracking variables
@@ -125,8 +119,6 @@ class Trainer:
         # Track initial loss/accuracy
         self.validation_epoch()
         for epoch in range(self.epochs):
-            #updating learing rate
-            #self.scheduler.step()
             # Perform a full pass through all the training samples
             for batch_it, (X_batch, Y_batch) in enumerate(self.dataloader_train):
                 # X_batch is the CIFAR10 images. Shape: [batch_size, 3, 32, 32]
@@ -185,5 +177,8 @@ if __name__ == "__main__":
     plt.savefig(os.path.join("plots", "final_accuracy.png"))
     plt.show()
 
+    print("Final train loss:", trainer.TRAIN_LOSS[-trainer.early_stop_count])
+    print("Final training accuracy:", trainer.TRAIN_ACC[-trainer.early_stop_count])
+    print("Final validation loss:", trainer.VALIDATION_LOSS[-trainer.early_stop_count])
     print("Final test accuracy:", trainer.TEST_ACC[-trainer.early_stop_count])
     print("Final validation accuracy:", trainer.VALIDATION_ACC[-trainer.early_stop_count])

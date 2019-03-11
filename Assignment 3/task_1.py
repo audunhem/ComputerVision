@@ -19,8 +19,8 @@ class network1(nn.Module):
         """
         super().__init__()
         num_filters_1 = 32  # Set number of filters in first conv layer
-        num_filters_2 = 64
-        num_filters_3 = 128
+        num_filters_2 = 64  # Set number of filters in second conv layer
+        num_filters_3 = 128 # Set number of filters in third conv layer
 
 
         # Define the convolutional layers

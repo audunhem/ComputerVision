@@ -6,7 +6,7 @@ from dataloaders import load_cifar10
 from utils import to_cuda, compute_loss_and_accuracy
 
 
-class ExampleModel(nn.Module):
+class model2(nn.Module):
 
     def __init__(self,
                  image_channels,
@@ -21,9 +21,9 @@ class ExampleModel(nn.Module):
         num_filters1 = 32  # Set number of filters in first conv layer
         num_filters2 = 64  # Set number of filters in second conv layer
         num_filters3 = 128  # Set number of filters in third conv layer
-        num_filters4 = 256  # Set number of filters in third conv layer
-        num_filters5 = 512  # Set number of filters in third conv layer
-        # Define the convolutional layers
+        num_filters4 = 256  # Set number of filters in fourth conv layer
+        num_filters5 = 512  # Set number of filters in fifth conv layer
+        #Define the convolutional layers
         self.feature_extractor = nn.Sequential(
             #First conv layer
             nn.Conv2d(
@@ -151,9 +151,11 @@ class ExampleModel(nn.Module):
             nn.MaxPool2d(2,2)
 
         )
+        #initializating weights
         for m in self.modules():
             if isinstance(m, nn.Conv2d):
                 torch.nn.init.xavier_uniform_(m.weight)
+
         # The output of feature_extractor will be [batch_size, num_filters, 16, 16]
         self.num_output_features = 512 *8*8
         # Initialize our last fully connected layer
@@ -176,7 +178,6 @@ class ExampleModel(nn.Module):
 
         # Run image through convolutional layers
         x = self.feature_extractor(x)
-        #print(x.shape)
         # Reshape our input to (batch_size, num_output_features)
         x = x.view(-1, self.num_output_features)
         # Forward pass through the fully-connected layers.
@@ -201,8 +202,8 @@ class Trainer:
 
         # Since we are doing multi-class classification, we use the CrossEntropyLoss
         self.loss_criterion = nn.CrossEntropyLoss()
-        # Initialize the mode
-        self.model = ExampleModel(image_channels=3, num_classes=10)
+        # Initialize the model
+        self.model = model2(image_channels=3, num_classes=10)
         # Transfer model to GPU VRAM, if possible.
         self.model = to_cuda(self.model)
 
@@ -213,6 +214,7 @@ class Trainer:
         # Load our dataset
         self.dataloader_train, self.dataloader_val, self.dataloader_test = load_cifar10(self.batch_size)
 
+        # Number of times per epoch to run validation check
         self.validation_check = len(self.dataloader_train) // 2
 
         # Tracking variables
@@ -311,6 +313,9 @@ if __name__ == "__main__":
     trainer = Trainer()
     trainer.train()
 
+    trainer.early_stop_count = 1    #for when the model does not early stop -> look at last value
+                                    #uncomment if early-stopping occurs
+
     os.makedirs("plots", exist_ok=True)
     # Save plots and show them
     plt.figure(figsize=(12, 8))
@@ -331,5 +336,8 @@ if __name__ == "__main__":
     plt.savefig(os.path.join("plots", "final_accuracy.png"))
     plt.show()
 
+    print("Final train loss:", trainer.TRAIN_LOSS[-trainer.early_stop_count])
+    print("Final training accuracy:", trainer.TRAIN_ACC[-trainer.early_stop_count])
+    print("Final validation loss:", trainer.VALIDATION_LOSS[-trainer.early_stop_count])
     print("Final test accuracy:", trainer.TEST_ACC[-trainer.early_stop_count])
     print("Final validation accuracy:", trainer.VALIDATION_ACC[-trainer.early_stop_count])

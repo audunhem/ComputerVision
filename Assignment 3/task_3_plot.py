@@ -5,14 +5,15 @@ import task_2_model_2
 
 if __name__ == "__main__":
 
+    #training the model from task 3
     trainer_resNet = task_3.Trainer()
     trainer_resNet.train()
 
+    #traingin out best model from task 2
     trainer_model_2 = task_2_model_2.Trainer()
     trainer_model_2.train()
 
     os.makedirs("plots", exist_ok=True)
-
 
     # Save plots and show them
     plt.figure(figsize=(12, 8))
