@@ -3,14 +3,23 @@ from keras import models
 from keras import layers
 from keras import optimizers
 from keras.layers import Activation
+from dataloader import load_data
+import numpy as np
 
 #Hyper parameters
 epochs=10
 batch_size=64
 
-
+[x_train, x_test, y_train, y_test] = load_data()
+x_val = x_train[-100];
+y_val = y_train[-100];
+x_train = x_train[:-101];
+y_train = y_train[:-101];
+x_train = np.array(x_train)
+x_test = np.array(x_test)
+x_val = np.array(x_val)
 #Model
-input_shape=(150,150,3)
+input_shape=(160,320,3)
 
 model = models.Sequential()
 
