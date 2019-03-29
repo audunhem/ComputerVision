@@ -15,13 +15,12 @@ def load_data():
     shuffle(ind_list)
     train_new  = X_train[ind_list]
     target_new = y_train[ind_list]
-    return X_train, X_test, y_train, y_test
-
-def get_image(data,labels,batchsize):
-    img = pyplot.imread(data[0][2])
-
-[X_train, X_test, y_train, y_test] = load_data()
-get_image(X_train,y_train,0)
-
+    x_train_vals = [];
+    x_test_vals = [];
+    for i in range(len(X_train)):
+        x_train_vals.append(pyplot.imread(X_train[i][0]))
+    for j in range(len(X_test)):
+        x_test_vals.append(pyplot.imread(X_test[j][0]))
+    return x_train_vals, x_test_vals, y_train, y_test
 
 #image, steering_angle = choose_image(data_dir, center, left, right, steering_angle)
