@@ -4,6 +4,7 @@ from matplotlib import pyplot
 import pandas as pd
 import os
 from random import shuffle
+import numpy as np
 
 
 def load_data():
@@ -17,10 +18,12 @@ def load_data():
     target_new = y_train[ind_list]
     x_train_vals = [];
     x_test_vals = [];
+    y_train = np.asarray(y_train)
+    y_test = np.asarray(y_test)
     for i in range(len(X_train)):
-        x_train_vals.append(pyplot.imread(X_train[i][0]))
+        x_train_vals.append(np.asarray(pyplot.imread(X_train[i][0])))
     for j in range(len(X_test)):
-        x_test_vals.append(pyplot.imread(X_test[j][0]))
+        x_test_vals.append(np.asarray(pyplot.imread(X_test[j][0])))
     return x_train_vals, x_test_vals, y_train, y_test
 
 #image, steering_angle = choose_image(data_dir, center, left, right, steering_angle)
