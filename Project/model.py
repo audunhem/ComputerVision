@@ -11,23 +11,20 @@ model_filename="dave2.json"
 weights_filename="dave2.h5"
 
 #Hyper parameters
-epochs=30
+epochs=20
 batch_size=64
 
 [x_train, x_test, y_train, y_test] = load_data()
 
 
 x_train = np.array(x_train)
+x_test = np.array(x_test)
 y_train = np.array(y_train)
-x_train=x_train[:,20:140,:,:]
+x_train=x_train[:,60:130,:,:]
 
 
-x_val = x_train[-400:];
-y_val = y_train[-400:];
-x_train = x_train[:-401];
-y_train = y_train[:-401];
-print(y_train.shape)
-print(y_val.shape)
+x_val = x_test[:,60:130,:,:];
+y_val = y_test;
 
 
 #x_val=x_train[-150:]
@@ -46,13 +43,13 @@ y_test = np.array(y_test)
 datagen = ImageDataGenerator(brightness_range=[1/510, 1/255])
 
 #Model
-input_shape=(160,320,3)
+input_shape=(70,320,3)
 
 model = models.Sequential()
 
 
 #Normalization
-model.add(layers.BatchNormalization(input_shape=(120,320,3), name='norm'))
+model.add(layers.BatchNormalization(input_shape=input_shape, name='norm'))
 
 
 #Convolutional layers
@@ -94,10 +91,7 @@ model.add(layers.Dense(units=1, activation='tanh'))
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 print(model.summary())
 #model.fit(x_train, y_train, steps_per_epoch=300, epochs=epochs,validation_steps=40 ,validation_data=(x_val,y_val))
-model.fit_generator(datagen.flow(x_train, y_train), steps_per_epoch=200, epochs=epochs,validation_steps=10 ,validation_data=(x_val,y_val), shuffle = True)
+model.fit_generator(datagen.flow(x_train, y_train), samples_per_epoch=len(x_train), epochs=epochs, nb_val_samples = len(x_val), validation_data=(datagen.flow(x_val,y_val)))
 #model.evaluate_generator(datagen.flow(x_test, y_test),steps=30)
 #model.evaluate(x_test, y_test, batch_size=batch_size)
 model.save('model.h5')
-
-#model.fit_generator((x_train, y_train, steps_per_epoch = ceil(num_train_samples / batch_size),
-#epochs=epochs, valitation_data=(x_val,y_val),validation_steps= ceil(val_samples / batch_size)))
