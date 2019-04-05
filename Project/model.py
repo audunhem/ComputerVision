@@ -2,16 +2,19 @@ import math
 from keras import models
 from keras import layers
 from keras import optimizers
+from keract import get_activations
 from keras.layers import Activation, Lambda, Reshape, Dropout
 from dataloader import load_data
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 
+
+
 model_filename="dave2.json"
 weights_filename="dave2.h5"
 
 #Hyper parameters
-epochs=20
+epochs=10
 batch_size=64
 
 [x_train, x_test, y_train, y_test] = load_data()
@@ -40,7 +43,7 @@ x_test = np.array(x_test)
 y_test = np.array(y_test)
 
 
-datagen = ImageDataGenerator(brightness_range=[1/510, 1/255])
+datagen = ImageDataGenerator(brightness_range=[0.02, 3])
 
 #Model
 input_shape=(70,320,3)
@@ -67,7 +70,7 @@ model.add(Dropout(0.5))
 
 model.add(layers.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), name='conv4'))
 model.add(Activation('relu', name='relu4'))
-model.add(Dropout(0.5))
+model.add(Dropout(0.1))
 
 model.add(layers.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), name='conv5'))
 model.add(Activation('relu', name='relu5'))
@@ -77,7 +80,7 @@ model.add(Dropout(0.5))
 model.add(layers.Flatten())
 model.add(layers.Dense(units=100, name='fc1'))
 model.add(Activation('relu', name='relu6'))
-model.add(Dropout(0.))
+model.add(Dropout(0.1))
 
 model.add(layers.Dense(units=50, name='fc2'))
 model.add(Activation('relu', name='relu7'))
