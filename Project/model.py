@@ -44,6 +44,29 @@ y_test = np.array(y_test)
 
 datagen = ImageDataGenerator(brightness_range=[0.02, 2],height_shift_range=10,zca_whitening=True)
 
+def pre_process(image):
+        if(random.random() <= 0.4):
+                image =np.array(image)
+                bright_factor = 0.4
+                image[:,:,2] = image[:,:,2]*bright_factor
+
+        if(random.random() <= 0.4):
+                bright_factor = 0.3
+                x = random.randint(0, image.shape[1])
+                y = random.randint(0, image.shape[0])
+
+                width = random.randint(int(image.shape[1]/2),image.shape[1])
+                if(x+ width > image.shape[1]):
+                        x = image.shape[1] - x
+                height = random.randint(int(image.shape[0]/2),image.shape[0])
+                if(y + height > image.shape[0]):
+                        y = image.shape[0] - y
+                #Assuming HSV image
+                image[y:y+height,x:x+width,2] = image[y:y+height,x:x+width,2]*bright_factor
+
+        return image
+
+
 #Model
 input_shape=(70,240,3)
 
