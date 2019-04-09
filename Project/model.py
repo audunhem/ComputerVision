@@ -16,30 +16,17 @@ weights_filename="dave2.h5"
 epochs=6
 batch_size=64
 
-[x_train, x_test, y_train, y_test] = load_data()
+data = np.load('driving_data.npz')
 
 
-x_train = np.array(x_train)
-x_test = np.array(x_test)
-y_train = np.array(y_train)
+x_train = np.array(data['x_train'])
+x_val = np.array(data['x_val'])
+y_train = np.array(data['y_train'])
+y_val = np.array(data['y_val'])
 x_train=x_train[:,70:140,40:280,:]
 
 
-x_val = x_test[:,70:140,40:280,:];
-y_val = y_test;
-
-
-#x_val=x_train[-150:]
-#y_val=y_train[-150:]
-#print(x_train.shape)
-#print(x_val.shape)
-
-
-#x_train=x_train[:-150]
-#y_train=y_train[:-150]
-#print(x_train.shape)
-x_test = np.array(x_test)
-y_test = np.array(y_test)
+x_val = x_val[:,70:140,40:280,:]
 
 
 datagen = ImageDataGenerator(brightness_range=[0.02, 2],height_shift_range=10,zca_whitening=True)
