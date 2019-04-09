@@ -7,6 +7,7 @@ from random import shuffle
 import numpy as np
 import string
 import random
+import cv2
 
 
 def load_data():
@@ -31,30 +32,31 @@ def load_data():
     right_turns = 0
     left_turns = 0
     straight = 0
+    camera_offset= 0.3
     for i in range(len(X_train)):
         if random.random() > 0.2 and y_train[i] == 0:
             #do nothing
             continue
         else:
-            x_train_vals.append(np.asarray(pyplot.imread(X_train[i][0])))
+            x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][0])), cv2.COLOR_BGR2HSV))
             y_train_vals.append(y_train[i])
-            x_train_vals.append(np.asarray(pyplot.imread(X_train[i][1])))
-            y_train_vals.append(y_train[i]+.25)
-            x_train_vals.append(np.asarray(pyplot.imread(X_train[i][2])))
-            y_train_vals.append(y_train[i]-.25)
+            x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][1])), cv2.COLOR_BGR2HSV))
+            y_train_vals.append(y_train[i]+camera_offset)
+            x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][2])), cv2.COLOR_BGR2HSV))
+            y_train_vals.append(y_train[i]-camera_offset)
     for j in range(len(X_test)):
         x_test_vals.append(np.asarray(pyplot.imread(X_test[j][0])))
     for i in range(len(X_train)):
-        if random.random() > 0.2 and y_train[i] == 0:
+        if random.random() > 0.3 and y_train[i] == 0:
             #do nothing
             continue
         else:
-            x_train_vals.append(np.asarray(np.fliplr(pyplot.imread(X_train[i][0]))))
+            x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][0]))), cv2.COLOR_BGR2HSV))
             y_train_vals.append(-y_train[i])
-            x_train_vals.append(np.asarray(np.fliplr(pyplot.imread(X_train[i][1]))))
-            y_train_vals.append(-(y_train[i]+.25))
-            x_train_vals.append(np.asarray(np.fliplr(pyplot.imread(X_train[i][2]))))
-            y_train_vals.append(-(y_train[i]-.25))
+            x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][1]))), cv2.COLOR_BGR2HSV))
+            y_train_vals.append(-(y_train[i]+camera_offset))
+            x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][2]))), cv2.COLOR_BGR2HSV))
+            y_train_vals.append(-(y_train[i]-camera_offset))
 
     """
     for i in range(len(X_train)):
@@ -73,4 +75,4 @@ def load_data():
 
 if __name__ == '__main__':
     [x_train, x_test, y_train, y_test] = load_data()
-    np.savez('driving_data.npz', x_train=x_train, x_val=x_test, y_train=y_train, y_val=y_test) 
+    np.savez('driving_data.npz', x_train=x_train, x_val=x_test, y_train=y_train, y_val=y_test)
