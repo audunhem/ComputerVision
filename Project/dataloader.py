@@ -70,3 +70,7 @@ def load_data():
     random.shuffle(c)
     x_train_vals, y_train_vals = zip(*c)
     return x_train_vals, x_test_vals, y_train_vals, y_test
+
+if __name__ == '__main__':
+    [x_train, x_test, y_train, y_test] = load_data()
+    np.savez('driving_data.npz', x_train=x_train, x_val=x_test, y_train=y_train, y_val=y_test) 
