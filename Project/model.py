@@ -6,6 +6,7 @@ from keras.layers import Activation, Lambda, Reshape, Dropout
 from dataloader import load_data
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
+import random
 
 
 
@@ -27,20 +28,39 @@ x_train=x_train[:,70:140,40:280,:]
 
 
 x_val = x_val[:,70:140,40:280,:]
+'''def pre_process(image):
+        if(random.random() <= 0.4):
+                image =np.array(image)
+                bright_factor = random.uniform(0.1,0.6)
+                image[:,:,2] = image[:,:,2]*bright_factor
 
+        if(random.random() <= 0.4):
+                bright_factor = random.uniform(0.1,0.5)
+                x = random.randint(0, image.shape[1])
+                y = random.randint(0, image.shape[0])
 
-datagen = ImageDataGenerator(brightness_range=[0.02, 2],height_shift_range=10,zca_whitening=True)
+                width = random.randint(int(image.shape[1]/2),image.shape[1])
+                if(x+ width > image.shape[1]):
+                        x = image.shape[1] - x
+                height = random.randint(int(image.shape[0]/2),image.shape[0])
+                if(y + height > image.shape[0]):
+                        y = image.shape[0] - y
+                #Assuming HSV image
+                image[y:y+height,x:x+width,2] = image[y:y+height,x:x+width,2]*bright_factor
+
+        return image
+'''
 
 def pre_process(image):
 
         if(random.random() <= 0.4):
                 image =np.array(image)
-                bright_factor = 0.4
+                bright_factor = random.uniform(0.1,0.4)
                 image[:,:,2] = image[:,:,2]*bright_factor
 
 
         if(random.random() <= 0.8):
-                bright_factor = 0.4
+                bright_factor = random.uniform(0.2,0.8)
                 #print(image.shape)
                 x = random.randint(0, image.shape[1])
                 y = random.randint(0, image.shape[0])
@@ -70,6 +90,9 @@ def pre_process(image):
                 image[y:y+height,x:x+width,2] = image[y:y+height,x:x+width,2]*bright_factor
 
         return image
+datagen = ImageDataGenerator(height_shift_range=10, preprocessing_function=pre_process)
+
+
 
 
 #Model
@@ -121,7 +144,7 @@ model.add(layers.Dense(units=1, activation='tanh'))
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 print(model.summary())
 #model.fit(x_train, y_train, steps_per_epoch=300, epochs=epochs,validation_steps=40 ,validation_data=(x_val,y_val))
-model.fit_generator(datagen.flow(x_train, y_train), samples_per_epoch=len(x_train), epochs=epochs, nb_val_samples = len(x_val), validation_data=(datagen.flow(x_val,y_val)))
+model.fit_generator(datagen.flow(x_train, y_train), steps_per_epoch=700, epochs=epochs, validation_steps = 50, validation_data=(datagen.flow(x_val,y_val)))
 #model.evaluate_generator(datagen.flow(x_test, y_test),steps=30)
 #model.evaluate(x_test, y_test, batch_size=batch_size)
 model.save('model.h5')
