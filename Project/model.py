@@ -14,18 +14,21 @@ model_filename="dave2.json"
 weights_filename="dave2.h5"
 
 #Hyper parameters
-epochs=6
+epochs=20
 batch_size=64
 
-data_dirt = np.load('driving_data_dirt.npz')
+data = np.load('driving_data.npz')
 
-x_train = np.array(data_dirt['x_train'])
-x_val = np.array(data_dirt['x_val'])
-y_train = np.array(data_dirt['y_train'])
-y_val = np.array(data_dirt['y_val'])
+x_train = np.array(data['x_train'])
+x_val = np.array(data['x_val'])
+y_train = np.array(data['y_train'])
+y_val = np.array(data['y_val'])
 x_train=x_train[:,70:140,40:280,:]
 x_val = x_val[:,70:140,40:280,:]
+num_samples = y_train.size
+steps = np.ceil(num_samples / batch_size)
 
+"""
 data_jungle = np.load('driving_data_jungle1.npz')
 
 x_train1 = np.array(data_jungle['x_train'])
@@ -34,7 +37,7 @@ y_train1 = np.array(data_jungle['y_train'])
 y_val1 = np.array(data_jungle['y_val'])
 x_train1=x_train1[:,70:140,40:280,:]
 x_val1 = x_val1[:,70:140,40:280,:]
-
+"""
 
 
 
@@ -60,18 +63,18 @@ x_val1 = x_val1[:,70:140,40:280,:]
 
 def pre_process(image):
 
-        #if(random.random() <= 0.4):
+        if(random.random() <= 0.4):
                 image =np.array(image)
-                bright_factor = random.uniform(0.1,6)
-                image[:,:,2] = image[:,:,2]*bright_factor
+                bright_factor = random.uniform(0.7,1.3)
+                #image[:,:,2] = image[:,:,2]*bright_factor
         #if(random.random() <= 0.3):
         #        image =np.array(image)
         #        sat_factor = random.uniform(0.2,1.6)
         #        image[:,:,1] = image[:,:,1]*sat_factor
         #if(random.random() <= 0.2):
                 #image=transform_incline(image)
-        if(random.random() <= 0.2):
-                bright_factor = random.uniform(0.2,0.8)
+        if(random.random() <= 1):
+                bright_factor = random.uniform(0.4,0.8)
                 #print(image.shape)
                 x = random.randint(0, image.shape[1])
                 y = random.randint(0, image.shape[0])
@@ -101,37 +104,10 @@ def pre_process(image):
                 image[y:y+height,x:x+width,2] = image[y:y+height,x:x+width,2]*bright_factor
 
         return image
-datagen = ImageDataGenerator(height_shift_range=10, preprocessing_function=pre_process)
 
-def transform_incline(image, shift=(5,20), orientation='rand'):
-    
-    rows,cols,ch = image.shape
-    
-    hshift = np.random.randint(shift[0],shift[1]+1)
-    vshift = hshift
-    
-    if orientation == 'rand':
-        orientation = random.choice(['down', 'up'])
-    
-    if orientation == 'up':
-        hshift = -hshift
-        vshift = -vshift
-    elif orientation != 'down':
-        raise ValueError("No or unknown orientation given. Possible values are 'up' and 'down'.")
-    
-    pts1 = np.float32([[70,70],
-                       [250,70],
-                       [0,rows],
-                       [cols,rows]])
-    pts2 = np.float32([[70+hshift,70+vshift],
-                       [250-hshift,70+vshift],
-                       [0,rows],
-                       [cols,rows]])
-    
-    #Calculate the transformation matrix, perform the transformation,
-    #and return it.
-    M = cv2.getPerspectiveTransform(pts1, pts2)
-    return cv2.warpPerspective(image, M, (cols, rows))
+datagen = ImageDataGenerator(preprocessing_function=pre_process)
+
+
 
 
 #Model
@@ -183,10 +159,10 @@ model.add(layers.Dense(units=1, activation='tanh'))
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 print(model.summary())
 #model.fit(x_train, y_train, steps_per_epoch=300, epochs=epochs,validation_steps=40 ,validation_data=(x_val,y_val))
-model.fit_generator(datagen.flow(x_train, y_train), steps_per_epoch=700, epochs=epochs, validation_steps = 50, validation_data=(datagen.flow(x_val,y_val)))
-model.fit_generator(datagen.flow(x_train1[0:8000], y_train1[0:8000]), steps_per_epoch=300, epochs=3, validation_steps = 50, validation_data=(datagen.flow(x_val1,y_val1)))
-model.fit_generator(datagen.flow(x_train1[8001:16000], y_train1[8001:16000]), steps_per_epoch=300, epochs=3, validation_steps = 50, validation_data=(datagen.flow(x_val1,y_val1)))
-model.fit_generator(datagen.flow(x_train1[16001:], y_train1[16001:]), steps_per_epoch=300, epochs=3, validation_steps = 50, validation_data=(datagen.flow(x_val1,y_val1)))
+model.fit_generator(datagen.flow(x_train, y_train), steps_per_epoch=steps, epochs=epochs, validation_steps = 50, validation_data=(datagen.flow(x_val,y_val)))
+#model.fit_generator(datagen.flow(x_train1[0:8000], y_train1[0:8000]), steps_per_epoch=300, epochs=3, validation_steps = 50, validation_data=(datagen.flow(x_val1,y_val1)))
+#model.fit_generator(datagen.flow(x_train1[8001:16000], y_train1[8001:16000]), steps_per_epoch=300, epochs=3, validation_steps = 50, validation_data=(datagen.flow(x_val1,y_val1)))
+#model.fit_generator(datagen.flow(x_train1[16001:], y_train1[16001:]), steps_per_epoch=300, epochs=3, validation_steps = 50, validation_data=(datagen.flow(x_val1,y_val1)))
 #model.evaluate_generator(datagen.flow(x_test, y_test),steps=30)
 #model.evaluate(x_test, y_test, batch_size=batch_size)
 model.save('model.h5')
