@@ -55,15 +55,12 @@ def transform_curvature(image, shift=(0.1,0.8), orientation='rand'):
 
 def load_data():
     random.seed()
-    data_df = pd.read_csv(os.path.join(os.getcwd(),'recordings', 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
+    data_df = pd.read_csv(os.path.join(os.getcwd(),'recordings', 'driving_log.csv'),  sep=",",names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
     X = data_df[['center', 'left', 'right']].values
     y = data_df['steering'].values
     for x in X:
         for i in range(3):
-
-
             folders = x[i].strip().split("/") #when running on unix-generated files
-            #print(folders)
             #folders = x[i].split("\\") #when using windows-generated files
             x[i] = os.path.join(os.getcwd(),'recordings',folders[-2],folders[-1])
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=0)
@@ -82,20 +79,20 @@ def load_data():
             #do nothing
             continue
         else:
-            x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][0])), cv2.COLOR_BGR2HSV))
+            x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][0])), cv2.COLOR_RGB2HSV))
             y_train_vals.append(y_train[i])
             if random.random() > 0.4:
-                x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][1])), cv2.COLOR_BGR2HSV))
+                x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][1])), cv2.COLOR_RGB2HSV))
                 y_train_vals.append(y_train[i]+camera_offset)
-                x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][2])), cv2.COLOR_BGR2HSV))
+                x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][2])), cv2.COLOR_RGB2HSV))
                 y_train_vals.append(y_train[i]-camera_offset)
             if(random.random() <= 0.2):
-                    x_train_vals.append(transform_incline(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][1])), cv2.COLOR_BGR2HSV)))
+                    x_train_vals.append(transform_incline(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][1])), cv2.COLOR_RGB2HSV)))
                     y_train_vals.append(y_train[i])
-            if(random.random() <= 0.2):
-                    image, offset=transform_curvature(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][1])), cv2.COLOR_BGR2HSV))
+            if(random.random() <= 0.0):
+                    image, offset=transform_curvature(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][1])), cv2.COLOR_RGB2HSV))
                     x_train_vals.append(image)
-                    y_train_vals.append(offset)
+                    y_train_vals.append(offset*0.4)
     for j in range(len(X_test)):
         x_test_vals.append(np.asarray(pyplot.imread(X_test[j][0])))
     for i in range(len(X_train)):
@@ -103,12 +100,12 @@ def load_data():
             #do nothing
             continue
         else:
-            x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][0]))), cv2.COLOR_BGR2HSV))
+            x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][0]))), cv2.COLOR_RGB2HSV))
             y_train_vals.append(-y_train[i])
             if random.random() > 0.4:
-                x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][1]))), cv2.COLOR_BGR2HSV))
+                x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][1]))), cv2.COLOR_RGB2HSV))
                 y_train_vals.append(-(y_train[i]+camera_offset))
-                x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][2]))), cv2.COLOR_BGR2HSV))
+                x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][2]))), cv2.COLOR_RGB2HSV))
                 y_train_vals.append(-(y_train[i]-camera_offset))
 
     """
