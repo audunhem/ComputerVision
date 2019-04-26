@@ -7,7 +7,7 @@ from dataloader import load_data
 import numpy as np
 from keras.preprocessing.image import ImageDataGenerator
 import random
-
+import cv2
 
 
 model_filename="dave2.json"
@@ -33,12 +33,10 @@ x_val = x_val[:,70:140,40:280,:]
                 image =np.array(image)
                 bright_factor = random.uniform(0.1,0.6)
                 image[:,:,2] = image[:,:,2]*bright_factor
-
         if(random.random() <= 0.4):
                 bright_factor = random.uniform(0.1,0.5)
                 x = random.randint(0, image.shape[1])
                 y = random.randint(0, image.shape[0])
-
                 width = random.randint(int(image.shape[1]/2),image.shape[1])
                 if(x+ width > image.shape[1]):
                         x = image.shape[1] - x
@@ -47,7 +45,6 @@ x_val = x_val[:,70:140,40:280,:]
                         y = image.shape[0] - y
                 #Assuming HSV image
                 image[y:y+height,x:x+width,2] = image[y:y+height,x:x+width,2]*bright_factor
-
         return image
 '''
 
@@ -57,8 +54,12 @@ def pre_process(image):
                 image =np.array(image)
                 bright_factor = random.uniform(0.1,0.4)
                 image[:,:,2] = image[:,:,2]*bright_factor
-
-
+        if(random.random() <= 0.4):
+                image =np.array(image)
+                sat_factor = random.uniform(0.2,1.6)
+                image[:,:,1] = image[:,:,1]*sat_factor
+        if(random.random() <= 0.2):
+                image=transform_incline(image)
         if(random.random() <= 0.8):
                 bright_factor = random.uniform(0.2,0.8)
                 #print(image.shape)
@@ -92,7 +93,35 @@ def pre_process(image):
         return image
 datagen = ImageDataGenerator(height_shift_range=10, preprocessing_function=pre_process)
 
-
+def transform_incline(image, shift=(5,20), orientation='rand'):
+    
+    rows,cols,ch = image.shape
+    
+    hshift = np.random.randint(shift[0],shift[1]+1)
+    vshift = hshift
+    
+    if orientation == 'rand':
+        orientation = random.choice(['down', 'up'])
+    
+    if orientation == 'up':
+        hshift = -hshift
+        vshift = -vshift
+    elif orientation != 'down':
+        raise ValueError("No or unknown orientation given. Possible values are 'up' and 'down'.")
+    
+    pts1 = np.float32([[70,70],
+                       [250,70],
+                       [0,rows],
+                       [cols,rows]])
+    pts2 = np.float32([[70+hshift,70+vshift],
+                       [250-hshift,70+vshift],
+                       [0,rows],
+                       [cols,rows]])
+    
+    #Calculate the transformation matrix, perform the transformation,
+    #and return it.
+    M = cv2.getPerspectiveTransform(pts1, pts2)
+    return cv2.warpPerspective(image, M, (cols, rows))
 
 
 #Model
