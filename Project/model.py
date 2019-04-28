@@ -10,72 +10,36 @@ import random
 import cv2
 
 
-model_filename="dave2.json"
-weights_filename="dave2.h5"
-
 #Hyper parameters
 epochs=20
 batch_size=64
 
+#Loading of data
 data = np.load('driving_data.npz')
-
 x_train = np.array(data['x_train'])
 x_val = np.array(data['x_val'])
 y_train = np.array(data['y_train'])
 y_val = np.array(data['y_val'])
+
+#Cropping
 x_train=x_train[:,70:140,40:280,:]
 x_val = x_val[:,70:140,40:280,:]
+
+
 num_samples = y_train.size
 steps = np.ceil(num_samples / batch_size)
 
-"""
-data_jungle = np.load('driving_data_jungle1.npz')
 
-x_train1 = np.array(data_jungle['x_train'])
-x_val1 = np.array(data_jungle['x_val'])
-y_train1 = np.array(data_jungle['y_train'])
-y_val1 = np.array(data_jungle['y_val'])
-x_train1=x_train1[:,70:140,40:280,:]
-x_val1 = x_val1[:,70:140,40:280,:]
-"""
-
-
-
-'''def pre_process(image):
-        if(random.random() <= 0.4):
-                image =np.array(image)
-                bright_factor = random.uniform(0.1,0.6)
-                image[:,:,2] = image[:,:,2]*bright_factor
-        if(random.random() <= 0.4):
-                bright_factor = random.uniform(0.1,0.5)
-                x = random.randint(0, image.shape[1])
-                y = random.randint(0, image.shape[0])
-                width = random.randint(int(image.shape[1]/2),image.shape[1])
-                if(x+ width > image.shape[1]):
-                        x = image.shape[1] - x
-                height = random.randint(int(image.shape[0]/2),image.shape[0])
-                if(y + height > image.shape[0]):
-                        y = image.shape[0] - y
-                #Assuming HSV image
-                image[y:y+height,x:x+width,2] = image[y:y+height,x:x+width,2]*bright_factor
-        return image
-'''
-
+#Preprocces function that is appliet to each input to the network
 def pre_process(image):
-
+        #Add random brightness to image
         if(random.random() <= 0.4):
                 image =np.array(image)
                 bright_factor = random.uniform(0.7,1.3)
                 #image[:,:,2] = image[:,:,2]*bright_factor
-        #if(random.random() <= 0.3):
-        #        image =np.array(image)
-        #        sat_factor = random.uniform(0.2,1.6)
-        #        image[:,:,1] = image[:,:,1]*sat_factor
-        #if(random.random() <= 0.2):
-                #image=transform_incline(image)
+        #Add a random shadow to image
         if(random.random() <= 1):
                 bright_factor = random.uniform(0.4,0.8)
-                #print(image.shape)
                 x = random.randint(0, image.shape[1])
                 y = random.randint(0, image.shape[0])
                 width = 0
@@ -89,7 +53,6 @@ def pre_process(image):
                         y = 0
                     else:
                         height = image.shape[0]-y
-                    #print(y, height)
 
                 if rand_var == 2:
                     y = 0
@@ -99,7 +62,6 @@ def pre_process(image):
                         x = 0
                     else:
                         width = image.shape[1]-x
-                    #print(x, width)
                 #Assuming HSV image
                 image[y:y+height,x:x+width,2] = image[y:y+height,x:x+width,2]*bright_factor
 
@@ -123,46 +85,41 @@ model.add(layers.BatchNormalization(input_shape=input_shape, name='norm'))
 #Convolutional layers
 model.add(layers.Conv2D(filters=24,kernel_size=(5,5), strides=(2,2), name='conv1'))
 model.add(Activation('relu', name='relu1'))
-#model.add(Dropout(0.5))
+
 
 model.add(layers.Conv2D(filters=36, kernel_size=(5,5), strides=(2,2), name='conv2'))
 model.add(Activation('relu', name='relu2'))
-#model.add(Dropout(0.5))
+
 
 model.add(layers.Conv2D(filters=48, kernel_size=(5,5), strides=(2,2), name='conv3'))
 model.add(Activation('relu', name='relu3'))
-#model.add(Dropout(0.5))
+
 
 model.add(layers.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), name='conv4'))
 model.add(Activation('relu', name='relu4'))
-#model.add(Dropout(0.1))
+
 
 model.add(layers.Conv2D(filters=64, kernel_size=(3,3), strides=(1,1), name='conv5'))
 model.add(Activation('relu', name='relu5'))
-#model.add(Dropout(0.5))
+
 
 #Fully connected layers
 model.add(layers.Flatten())
 model.add(layers.Dense(units=100, name='fc1'))
 model.add(Activation('relu', name='relu6'))
-#model.add(Dropout(0.1))
+
 
 model.add(layers.Dense(units=50, name='fc2'))
 model.add(Activation('relu', name='relu7'))
-#model.add(Dropout(0.5))
 
 model.add(layers.Dense(units=10, name='fc3'))
 model.add(Activation('relu', name='relu8'))
-#model.add(Dropout(0.5))
+
 
 model.add(layers.Dense(units=1, activation='tanh'))
+
+
 model.compile(loss='mse', optimizer='adam', metrics=['accuracy'])
 print(model.summary())
-#model.fit(x_train, y_train, steps_per_epoch=300, epochs=epochs,validation_steps=40 ,validation_data=(x_val,y_val))
-model.fit_generator(datagen.flow(x_train, y_train), steps_per_epoch=steps, epochs=epochs, validation_steps = 50, validation_data=(datagen.flow(x_val,y_val)))
-#model.fit_generator(datagen.flow(x_train1[0:8000], y_train1[0:8000]), steps_per_epoch=300, epochs=3, validation_steps = 50, validation_data=(datagen.flow(x_val1,y_val1)))
-#model.fit_generator(datagen.flow(x_train1[8001:16000], y_train1[8001:16000]), steps_per_epoch=300, epochs=3, validation_steps = 50, validation_data=(datagen.flow(x_val1,y_val1)))
-#model.fit_generator(datagen.flow(x_train1[16001:], y_train1[16001:]), steps_per_epoch=300, epochs=3, validation_steps = 50, validation_data=(datagen.flow(x_val1,y_val1)))
-#model.evaluate_generator(datagen.flow(x_test, y_test),steps=30)
-#model.evaluate(x_test, y_test, batch_size=batch_size)
+model.fit_generator(datagen.flow(x_train, y_train, batch_size=batch_size), steps_per_epoch=steps, epochs=epochs, validation_steps = 50, validation_data=(datagen.flow(x_val,y_val)))
 model.save('model.h5')
