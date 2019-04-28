@@ -46,7 +46,6 @@ class SimplePIController:
 
 controller = SimplePIController(0.15, 0.001)
 set_speed = 30
-previous_angles = [0, 0]
 controller.set_desired(set_speed)
 
 
@@ -70,7 +69,8 @@ def telemetry(sid, data):
         steering_angle = float(model.predict(image_array[None, :, :, :], batch_size=1))
         previous_angles.pop(0)
         previous_angles.append(steering_angle)
-        #steering_angle = sum(previous_angles) / len(previous_angles)
+        
+        # reducing desired speed for sharp turns
         desired_speed = set_speed
         if np.abs(steering_angle) > 0.3:
             desired_speed = set_speed - (np.abs(steering_angle)-0.3)*30
