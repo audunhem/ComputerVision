@@ -9,49 +9,7 @@ import string
 import random
 import cv2
 
-def transform_incline(image, shift=(0.1,0.6), orientation='rand'):
 
-    rows,cols,ch = image.shape
-
-    vshift = random.uniform(shift[0],shift[1])
-    if orientation == 'rand':
-        orientation = random.choice(['down', 'up'])
-    if orientation == 'up':
-        vshift = -vshift*0.2
-    elif orientation != 'down':
-        raise ValueError("No or unknown orientation given. Possible values are 'up' and 'down'.")
-
-    dst = np.float32([[0., 0.], [1., 0.], [0., 1.], [1., 1.]]) * np.float32([cols, rows])
-
-    src = np.float32([[0., 0.], [1., 0.], [0-vshift, 1], [1+vshift, 1]]) * np.float32([cols, rows])
-    #Calculate the transformation matrix, perform the transformation,
-    #and return it.
-    M = cv2.getPerspectiveTransform(src, dst)
-    return cv2.warpPerspective(image, M, (cols, rows))
-
-
-def transform_curvature(image, shift=(0.1,0.8), orientation='rand'):
-
-    rows,cols,ch = image.shape
-
-    vshift = random.uniform(shift[0],shift[1])
-
-    if orientation == 'rand':
-        orientation = random.choice(['left', 'right'])
-
-    if orientation == 'left':
-        vshift = -vshift
-    elif orientation != 'right':
-        raise ValueError("No or unknown orientation given. Possible values are 'left' and 'right'.")
-
-    dst = np.float32([[0., 0.], [1., 0.], [0., 1.], [1., 1.]]) * np.float32([cols, rows])
-
-    src = np.float32([[0., 0.], [1., 0.], [0+vshift, 1], [1+vshift, 1]]) * np.float32([cols, rows])
-
-    #Calculate the transformation matrix, perform the transformation,
-    #and return it.
-    M = cv2.getPerspectiveTransform(src, dst)
-    return cv2.warpPerspective(image, M, (cols, rows)), vshift
 
 def load_data():
     random.seed()
@@ -86,13 +44,6 @@ def load_data():
                 y_train_vals.append(y_train[i]+camera_offset)
                 x_train_vals.append(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][2])), cv2.COLOR_RGB2HSV))
                 y_train_vals.append(y_train[i]-camera_offset)
-            if(random.random() <= 0.2):
-                    x_train_vals.append(transform_incline(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][1])), cv2.COLOR_RGB2HSV)))
-                    y_train_vals.append(y_train[i])
-            if(random.random() <= 0.0):
-                    image, offset=transform_curvature(cv2.cvtColor(np.asarray(pyplot.imread(X_train[i][1])), cv2.COLOR_RGB2HSV))
-                    x_train_vals.append(image)
-                    y_train_vals.append(offset*0.4)
     for j in range(len(X_test)):
         x_test_vals.append(np.asarray(pyplot.imread(X_test[j][0])))
     for i in range(len(X_train)):
@@ -108,20 +59,13 @@ def load_data():
                 x_train_vals.append(cv2.cvtColor(np.asarray(np.fliplr(pyplot.imread(X_train[i][2]))), cv2.COLOR_RGB2HSV))
                 y_train_vals.append(-(y_train[i]-camera_offset))
 
-    """
-    for i in range(len(X_train)):
-        if random.random() > 0.2 and y_train[i] == 0:
-            #do nothing
-            continue
-        else:
-            x_train_vals.append(np.asarray(np.fliplr(pyplot.imread(X_train[i][0]))))
-            y_train_vals.append(-y_train[i])
-    """
+
     y_train_vals = np.asarray(y_train_vals)
     c = list(zip(x_train_vals, y_train_vals))
     random.shuffle(c)
     x_train_vals, y_train_vals = zip(*c)
     return x_train_vals, x_test_vals, y_train_vals, y_test
+
 
 if __name__ == '__main__':
     [x_train, x_test, y_train, y_test] = load_data()
