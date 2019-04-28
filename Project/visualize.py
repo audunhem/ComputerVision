@@ -17,21 +17,27 @@ from keract import get_activations
 from keras.models import load_model
 from keras.preprocessing.image import ImageDataGenerator
 
+#selecting and applying augmentation techniques
 def pre_process(image):
-
+        #changing brightness
         if(random.random() <= 0.4):
                 image =np.array(image)
                 bright_factor = random.uniform(0.1,0.4)
                 image[:,:,2] = image[:,:,2]*bright_factor
+
+        #changing saturation
         if(random.random() <= 0.0):
                 image =np.array(image)
                 sat_factor = random.uniform(0.2,1.6)
                 image[:,:,1] = image[:,:,1]*sat_factor
+
+        #simulating curvature
         if(random.random() <= 0):
                 image=transform_curvature(image)
+
+        #applying shadow
         if(random.random() <= 0.8):
                 bright_factor = random.uniform(0.2,0.8)
-                #print(image.shape)
                 x = random.randint(0, image.shape[1])
                 y = random.randint(0, image.shape[0])
                 width = 0
@@ -45,7 +51,6 @@ def pre_process(image):
                         y = 0
                     else:
                         height = image.shape[0]-y
-                    #print(y, height)
 
                 if rand_var == 2:
                     y = 0
@@ -55,12 +60,11 @@ def pre_process(image):
                         x = 0
                     else:
                         width = image.shape[1]-x
-                    #print(x, width)
                 #Assuming HSV image
                 image[y:y+height,x:x+width,2] = image[y:y+height,x:x+width,2]*bright_factor
         return image
 
-
+#simulating incline
 def transform_incline(image, shift=(0.1,0.6), orientation='rand'):
 
     rows,cols,ch = image.shape
@@ -70,9 +74,6 @@ def transform_incline(image, shift=(0.1,0.6), orientation='rand'):
         orientation = random.choice(['down', 'up'])
     if orientation == 'up':
         vshift = -vshift*0.2
-    elif orientation != 'down':
-        raise ValueError("No or unknown orientation given. Possible values are 'up' and 'down'.")
-
     dst = np.float32([[0., 0.], [1., 0.], [0., 1.], [1., 1.]]) * np.float32([cols, rows])
 
     src = np.float32([[0., 0.], [1., 0.], [0-vshift, 1], [1+vshift, 1]]) * np.float32([cols, rows])
@@ -82,7 +83,7 @@ def transform_incline(image, shift=(0.1,0.6), orientation='rand'):
     print(cv2.warpPerspective(image, M, (cols, rows)).shape)
     return cv2.warpPerspective(image, M, (cols, rows))
 
-
+#simulating curvature
 def transform_curvature(image, shift=(0.1,0.8), orientation='rand'):
 
     rows,cols,ch = image.shape
@@ -94,8 +95,6 @@ def transform_curvature(image, shift=(0.1,0.8), orientation='rand'):
 
     if orientation == 'left':
         vshift = -vshift
-    elif orientation != 'right':
-        raise ValueError("No or unknown orientation given. Possible values are 'left' and 'right'.")
 
     dst = np.float32([[0., 0.], [1., 0.], [0., 1.], [1., 1.]]) * np.float32([cols, rows])
 
@@ -106,7 +105,7 @@ def transform_curvature(image, shift=(0.1,0.8), orientation='rand'):
     M = cv2.getPerspectiveTransform(src, dst)
     return cv2.warpPerspective(image, M, (cols, rows))
 
-
+#loading an image to process
 def load_example():
     data_df = pd.read_csv(os.path.join(os.getcwd(),'recordings', 'driving_log.csv'), names=['center', 'left', 'right', 'steering', 'throttle', 'reverse', 'speed'])
     X = data_df[['center', 'left', 'right']].values
@@ -120,30 +119,29 @@ def load_example():
 
     return example
 
+#plotting all steering angles
 def plot_histogram():
     data = np.load('driving_data.npz')
     y_train = np.array(data['y_train'])
     y_val = np.array(data['y_val'])
     plt.hist(y_train, bins='auto')  # arguments are passed to np.histogram
-    plt.title("Histogram with 'auto' bins")
+    plt.title("Distribution of steering angles")
     plt.show()
 
 if __name__ == '__main__':
     random.seed()
-    datagen = ImageDataGenerator(featurewise_center=True,brightness_range=[0.02, 2],height_shift_range=0, preprocessing_function = pre_process)
+    datagen = ImageDataGenerator(brightness_range=[0.02, 2],height_shift_range=0, preprocessing_function = pre_process)
     model = load_model('model.h5')
 
+    #resizing image and processing it
     example = load_example()
     example = np.resize(example,(1,160,320,3))
-    example = datagen.flow(x=example[:,70:140,:,:])
-    #example = datagen.flow(example[:,:,:,:])
+    example = datagen.flow(x=example[:,70:140,40:280,:])
     example = example[0]
-    #example = example[:,70:140,40:280,:]
-    print(example)
 
+    #displaying activation using the keract package
+    activations = keract.get_activations(model, example, layer_name='norm')
+    keract.display_activations(activations)
 
-    a = keract.get_activations(model, example, layer_name='norm')
-
-    #a = get_activations(model, example[:,60:130,:,:])
-    keract.display_activations(a)
+    #displaying the histogram of steering angles
     plot_histogram()
