@@ -65,7 +65,31 @@ def pre_process(image):
                 #Assuming HSV image
                 image[y:y+height,x:x+width,2] = image[y:y+height,x:x+width,2]*bright_factor
 
+        #Simulate incline
+        if(random.random() <= 0.2):
+                image=transform_incline(image)
         return image
+
+
+def transform_incline(image, shift=(0.1,0.6), orientation='rand'):
+
+    rows,cols,ch = image.shape
+
+    vshift = random.uniform(shift[0],shift[1])
+    if orientation == 'rand':
+        orientation = random.choice(['down', 'up'])
+    if orientation == 'up':
+        vshift = -vshift*0.2
+    elif orientation != 'down':
+        raise ValueError("No or unknown orientation given. Possible values are 'up' and 'down'.")
+
+    dst = np.float32([[0., 0.], [1., 0.], [0., 1.], [1., 1.]]) * np.float32([cols, rows])
+
+    src = np.float32([[0., 0.], [1., 0.], [0-vshift, 1], [1+vshift, 1]]) * np.float32([cols, rows])
+    #Calculate the transformation matrix, perform the transformation,
+    #and return it.
+    M = cv2.getPerspectiveTransform(src, dst)
+    return cv2.warpPerspective(image, M, (cols, rows))
 
 datagen = ImageDataGenerator(preprocessing_function=pre_process)
 
