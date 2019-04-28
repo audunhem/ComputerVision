@@ -30,7 +30,7 @@ num_samples = y_train.size
 steps = np.ceil(num_samples / batch_size)
 
 
-#Preprocces function that is appliet to each input to the network
+#Preprocces function that is applied to each input to the network
 def pre_process(image):
         #Add random brightness to image
         if(random.random() <= 0.4):
